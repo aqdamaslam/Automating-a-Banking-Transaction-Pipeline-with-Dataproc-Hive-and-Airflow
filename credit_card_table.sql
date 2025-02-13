@@ -33,3 +33,4 @@ CREATE INDEX idx_card_id ON CreditCardTransactions(card_id);
 CREATE INDEX idx_transaction_date ON CreditCardTransactions(transaction_date);
 CREATE INDEX idx_transaction_status ON CreditCardTransactions(transaction_status);
 CREATE INDEX idx_card_type ON CreditCardTransactions(card_type);
+
