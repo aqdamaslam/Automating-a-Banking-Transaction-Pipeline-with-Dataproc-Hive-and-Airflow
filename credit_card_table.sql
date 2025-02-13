@@ -1,6 +1,6 @@
-create database credit_card;
+CREATE DATABASE credit_card;
 
-use credit_card;
+USE credit_card;
 
 CREATE TABLE CreditCardTransactions (
     transaction_id SERIAL PRIMARY KEY,       -- Unique identifier for each transaction
