@@ -8,11 +8,11 @@ CREATE TABLE CreditCardTransactions (
     card_number CHAR(16) NOT NULL,           -- Full Card Number (should be encrypted or masked in real implementation)
     card_holder_name VARCHAR(100) NOT NULL,  -- Card holder's full name
     card_type VARCHAR(20) NOT NULL,          -- Card type (e.g., Visa, MasterCard, Amex)
-    card_expiry DATE NOT NULL,               -- Expiry date of the card
+    card_expiry VARCHAR(20) NOT NULL,               -- Expiry date of the card
     cvv_code CHAR(3) NOT NULL,               -- CVV code (must be encrypted or masked in real-world use)
     issuer_bank_name VARCHAR(100) NOT NULL,  -- Issuer bank name
     card_issuer_id INT NOT NULL,             -- Issuer bank unique identifier
-    transaction_amount DECIMAL(10, 2) NOT NULL, -- Transaction amount
+    transaction_amount DOUBLE NOT NULL, -- Transaction amount
     transaction_date TIMESTAMP NOT NULL,     -- Date and time of transaction
     merchant_id VARCHAR(50) NOT NULL,        -- Merchant identifier (e.g., merchant name or ID)
     transaction_status VARCHAR(20) NOT NULL, -- Status of the transaction (e.g., completed, pending, failed)
@@ -33,4 +33,34 @@ CREATE INDEX idx_card_id ON CreditCardTransactions(card_id);
 CREATE INDEX idx_transaction_date ON CreditCardTransactions(transaction_date);
 CREATE INDEX idx_transaction_status ON CreditCardTransactions(transaction_status);
 CREATE INDEX idx_card_type ON CreditCardTransactions(card_type);
+
+-- Hive Query 
+
+DROP TABLE IF EXISTS credit_card.transactions;
+CREATE TABLE credit_card.transactions (
+    transaction_id INT,
+    card_id STRING,
+    card_number STRING,
+    card_holder_name STRING,
+    card_type STRING,
+    card_expiry STRING,
+    cvv_code STRING,
+    issuer_bank_name STRING,
+    card_issuer_id INT,
+    transaction_amount DOUBLE,
+    transaction_date TIMESTAMP,
+    merchant_id STRING,
+    transaction_status STRING,
+    transaction_type STRING,
+    payment_method STRING,
+    card_country STRING,
+    billing_address STRING,
+    shipping_address STRING,
+    fraud_flag BOOLEAN,
+    fraud_alert_sent BOOLEAN,
+    created_at TIMESTAMP,
+    updated_at TIMESTAMP
+)
+STORED AS PARQUET;
+
 
