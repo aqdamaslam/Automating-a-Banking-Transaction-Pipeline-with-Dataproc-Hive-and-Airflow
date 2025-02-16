@@ -2,7 +2,7 @@ CREATE DATABASE credit_card;
 
 USE credit_card;
 
-CREATE TABLE CreditCardTransactions (
+CREATE TABLE IF NOT EXISTS CreditCardTransactions (
     transaction_id SERIAL PRIMARY KEY,       -- Unique identifier for each transaction
     card_id VARCHAR(20) NOT NULL,            -- Card ID (e.g., unique identifier for the card)
     card_number CHAR(16) NOT NULL,           -- Full Card Number (should be encrypted or masked in real implementation)
@@ -37,7 +37,8 @@ CREATE INDEX idx_card_type ON CreditCardTransactions(card_type);
 -- Hive Query In first commit I was completely forgot partioning by year, month
 
 DROP TABLE IF EXISTS credit_card.transactions;
-CREATE TABLE credit_card.transactions (
+
+CREATE TABLE IF NOT EXISTS credit_card.transactions (
     transaction_id INT,
     card_id STRING,
     card_number STRING,
