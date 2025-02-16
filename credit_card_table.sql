@@ -34,7 +34,7 @@ CREATE INDEX idx_transaction_date ON CreditCardTransactions(transaction_date);
 CREATE INDEX idx_transaction_status ON CreditCardTransactions(transaction_status);
 CREATE INDEX idx_card_type ON CreditCardTransactions(card_type);
 
--- Hive Query 
+-- Hive Query In first commit I was completely forgot partioning by year, month
 
 DROP TABLE IF EXISTS credit_card.transactions;
 CREATE TABLE credit_card.transactions (
@@ -61,6 +61,8 @@ CREATE TABLE credit_card.transactions (
     created_at TIMESTAMP,
     updated_at TIMESTAMP
 )
+PARTITIONED BY (year INT, month INT)
 STORED AS PARQUET;
+
 
 
