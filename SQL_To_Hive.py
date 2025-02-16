@@ -104,7 +104,7 @@ def load_data_to_dataproc_hive(records):
 
     # Write the DataFrame to Hive with partitioning by year and month
     df.write \
-        .mode("append") \
+        .mode("overwrite") \
         .format("parquet") \
         .option("parquet.compression", "SNAPPY") \
         .partitionBy("year", "month") \
