@@ -34,7 +34,7 @@ def fetch_data_from_gcp_sql():
 
         query = """
         SELECT * 
-        FROM CreditCardTransactions
+        FROM [YOU-SQL-TABLE-NAME]
         WHERE transaction_date >= DATE_SUB(CURRENT_DATE(), INTERVAL 1 MONTH)
         AND transaction_date < CURRENT_DATE() # Use LIMIT 10000 in query if your Spark cluster has memory issues
         """
@@ -95,8 +95,8 @@ def load_data_to_dataproc_hive(records):
            .withColumn("month", month(df["transaction_date"]))
     
     # Define Hive database and table
-    hive_database = "credit_card"
-    hive_table = "transactions"
+    hive_database = "[YOUR-HIVE-DATABASE]"
+    hive_table = "[YOUR-HIVE-TABLE]"
 
     # Enable dynamic partitioning
     spark.sql("SET hive.exec.dynamic.partition = true")
