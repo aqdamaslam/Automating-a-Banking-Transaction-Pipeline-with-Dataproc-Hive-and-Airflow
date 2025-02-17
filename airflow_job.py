@@ -3,7 +3,8 @@ from airflow import DAG
 from airflow.providers.google.cloud.operators.dataproc import (
     DataprocCreateClusterOperator,
     DataprocSubmitPySparkJobOperator,
-    DataprocDeleteClusterOperator
+    DataprocDeleteClusterOperator,
+    DataprocSubmitHiveJobOperator
 )
 from airflow.utils.dates import days_ago
 
@@ -27,10 +28,12 @@ dag = DAG(
     tags=['dev'],
 )
 
-# Define cluster configuration as per your project requirement. I am setting configuration as per free tier account for learning purpose
-CLUSTER_NAME = '[YOUR-GCP-CLUSTER-NAME]'
-PROJECT_ID = '[YOUR-GCP-PROJECT-ID]'
-REGION = '[REGION-NAME]'
+
+# Define cluster config
+CLUSTER_NAME = '[YOUR-DATAPROC-CLUSTER-NAME]'
+PROJECT_ID = '[YOUR-PROJECT-ID]'
+REGION = '[CLUSTER-REGION]'
+
 CLUSTER_CONFIG = {
     'master_config': {
         'num_instances': 1, # Master node
@@ -62,9 +65,49 @@ create_cluster = DataprocCreateClusterOperator(
     dag=dag,
 )
 
-submit_pyspark_sql_to_hivejob = DataprocSubmitPySparkJobOperator(
+hive_query = """
+    CREATE DATABASE IF NOT EXISTS credit_card;
+    USE credit_card;
+    CREATE TABLE credit_card.transactions (
+        transaction_id INT,
+        card_id STRING,
+        card_number STRING,
+        card_holder_name STRING,
+        card_type STRING,
+        card_expiry STRING,
+        cvv_code STRING,
+        issuer_bank_name STRING,
+        card_issuer_id INT,
+        transaction_amount DOUBLE,
+        transaction_date TIMESTAMP,
+        merchant_id STRING,
+        transaction_status STRING,
+        transaction_type STRING,
+        payment_method STRING,
+        card_country STRING,
+        billing_address STRING,
+        shipping_address STRING,
+        fraud_flag BOOLEAN,
+        fraud_alert_sent BOOLEAN,
+        created_at TIMESTAMP,
+        updated_at TIMESTAMP
+    )
+    PARTITIONED BY (year INT, month INT)
+    STORED AS PARQUET;
+"""
+
+create_hive_table = DataprocSubmitHiveJobOperator(
+    task_id='create_hive_database_table',
+    query=hive_query,
+    cluster_name=CLUSTER_NAME,
+    region=REGION,
+    dag=dag,
+)
+
+
+submit_pyspark_sql_to_hive_job = DataprocSubmitPySparkJobOperator(
     task_id='submit_pyspark_SQL_To_Hive_Job_on_dataproc',
-    main='gs://[YOUR_GCP_BUCKET-PATH]/[YOUR-SQL-TO-HIVE-PYTHON-FILE]',
+    main='gs://[YOUR-GCP-BUCKET-PATH]/SQL_To_Hive.py',
     cluster_name=CLUSTER_NAME,
     region=REGION,
     project_id=PROJECT_ID,
@@ -74,7 +117,7 @@ submit_pyspark_sql_to_hivejob = DataprocSubmitPySparkJobOperator(
 
 submit_pyspark_reports_generation_job = DataprocSubmitPySparkJobOperator(
     task_id='submit_pyspark_reports_job_on_dataproc',
-    main='gs://[YOUR_GCP_BUCKET-PATH]/[YOUR-REPORT-GENERATION-PYTHON-FILE]',
+    main='gs://[YOUR-GCP-BUCKET-PATH]/reports.py',
     cluster_name=CLUSTER_NAME,
     region=REGION,
     project_id=PROJECT_ID,
@@ -90,4 +133,4 @@ delete_cluster = DataprocDeleteClusterOperator(
     dag=dag,
 )
 
-create_cluster >> submit_pyspark_sql_to_hivejob >> submit_pyspark_reports_generation_job >> delete_cluster
+create_cluster >> create_hive_table >> submit_pyspark_sql_to_hive_job >> submit_pyspark_reports_generation_job >> delete_cluster
