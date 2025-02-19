@@ -1,66 +1,64 @@
+import subprocess
+import sys
+
+# Install required packages
+required_packages = ["pymysql", "cloud-sql-python-connector", "pyspark", "pandas"]
+for package in required_packages:
+    subprocess.run([sys.executable, "-m", "pip", "install", package, "--break-system-packages"], check=True)
+
+import os
 import pymysql
 from google.cloud.sql.connector import Connector
 from pyspark.sql import SparkSession
 from pyspark.sql.functions import year, month
 from pyspark.sql.types import StructType, StructField, StringType, IntegerType, DoubleType, TimestampType
 
-
-""" Connects to Google Cloud SQL using the Cloud SQL Connector.
-    Fetches transaction records from the `CreditCardTransactions` table for the past month. 
-"""
+# Load environment variables for security
+INSTANCE_CONNECTION_NAME = os.getenv("INSTANCE_CONNECTION_NAME", "[YOUR-GCP-INSTANCE-CONNECTION NAME]")
+DB_USER = os.getenv("DB_USER", "YOUR-GCP-MYSQL-USERNAME")
+DB_PASS = os.getenv("DB_PASS", "[YOUR-GCP-MYSQL-USERNAME]")
+DB_NAME = os.getenv("DB_NAME", "[YOUR-GCP-MYSQL-DATABASE-NAME]")
 
 def fetch_data_from_gcp_sql():
-    instance_connection_name = '[YOUR-INSTANCE-CONNECTION-NAME]'
-    db_user = '[DB-USERS]'
-    db_pass = '[DB-PASSWORD]'
-    db_name = '[DB-NAME]'
-
-    # Set up connector
+    """ Connects to Google Cloud SQL using the Cloud SQL Connector and fetches transaction records."""
     connector = Connector(ip_type="PUBLIC")
 
     try:
         conn = connector.connect(
-            instance_connection_name,
+            INSTANCE_CONNECTION_NAME,
             "pymysql",
-            user=db_user,
-            password=db_pass,
-            db=db_name,
+            user=DB_USER,
+            password=DB_PASS,
+            db=DB_NAME,
         )
         print("Connection successful!")
 
         cursor = conn.cursor()
 
- # Query to fetch transactions from the last month
-
         query = """
         SELECT * 
-        FROM [YOU-SQL-TABLE-NAME]
+        FROM CreditCardTransactions
         WHERE transaction_date >= DATE_SUB(CURRENT_DATE(), INTERVAL 1 MONTH)
-        AND transaction_date < CURRENT_DATE() # Use LIMIT 10000 in query if your Spark cluster has memory issues
+        AND transaction_date < CURRENT_DATE()
         """
         cursor.execute(query)
         records = cursor.fetchall()
         
         cursor.close()
         conn.close()
-
         return records
     
     except Exception as e:
         print(f"Error: {e}")
         return []
 
-""" Loads the fetched transaction data into a Hive table on Google Cloud Dataproc.
-    The table is stored in Parquet format and partitioned by year and month. """
-
 def load_data_to_dataproc_hive(records):
-    # Create a Spark session with Hive support enabled
+    """Loads transaction data into a Hive table on Google Cloud Dataproc."""
     spark = SparkSession.builder \
         .appName("GCP SQL to Hive Parquet with Partitioning") \
         .enableHiveSupport() \
         .getOrCreate()
 
-    # Define the schema for the DataFrame (must match with the SQL database table structure)
     schema = StructType([
         StructField("transaction_id", IntegerType(), True),
         StructField("card_id", StringType(), True),
@@ -86,23 +84,17 @@ def load_data_to_dataproc_hive(records):
         StructField("updated_at", TimestampType(), True)
     ])
 
-    # Convert raw records into an RDD and then to a DataFrame
     rdd = spark.sparkContext.parallelize(records)
     df = spark.createDataFrame(rdd, schema)
-
-    # Extract year and month from `transaction_date` to use as partitions
     df = df.withColumn("year", year(df["transaction_date"])) \
            .withColumn("month", month(df["transaction_date"]))
     
-    # Define Hive database and table
-    hive_database = "[YOUR-HIVE-DATABASE]"
+    hive_database = "YOUR-HIVE-DATABASE"
     hive_table = "[YOUR-HIVE-TABLE]"
 
-    # Enable dynamic partitioning
     spark.sql("SET hive.exec.dynamic.partition = true")
     spark.sql("SET hive.exec.dynamic.partition.mode = nonstrict")
 
-    # Write the DataFrame to Hive with partitioning by year and month
     df.write \
         .mode("overwrite") \
         .format("parquet") \
@@ -111,8 +103,6 @@ def load_data_to_dataproc_hive(records):
         .saveAsTable(f"{hive_database}.{hive_table}")
 
     print("Data successfully loaded into Hive table with year/month partitioning in Parquet format!")
-    
-# Main function that fetches data from GCP SQL and loads it into Hive. 
 
 def main():
     records = fetch_data_from_gcp_sql()
