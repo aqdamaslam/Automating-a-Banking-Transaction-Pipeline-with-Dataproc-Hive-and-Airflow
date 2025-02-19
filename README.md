@@ -10,7 +10,8 @@ A leading financial institution wants to **automate the extraction, transformati
 ---
 
 ## **Architecture Diagram**  
-![image](https://github.com/user-attachments/assets/64fcaebf-7e8e-463e-a2f4-d7b07d37b5be)
+![architecture](https://github.com/user-attachments/assets/fee88331-cb93-4889-b156-dd19425ffb15)
+
 
 ### **Architecture Flow**  
 1. **Data Extraction:** MySQL transactions data is read using PySpark on Dataproc.  
