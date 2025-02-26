@@ -65,7 +65,7 @@ A PySpark job is executed on Dataproc to:
 1. Connect to **Google Cloud SQL (MySQL)** using JDBC.  
 2. Read the **transactions table** into a Spark DataFrame.  
 3. Write the data into **Hive** in **Parquet format** for optimized storage and retrieval.  
-4. Enable **partitioning** based on `transaction_date`, `card_type`, and `loan_status` for faster query performance.  
+4. Enable **partitioning** based on `year`, and `month` for faster query performance.  
 
 ---
 
