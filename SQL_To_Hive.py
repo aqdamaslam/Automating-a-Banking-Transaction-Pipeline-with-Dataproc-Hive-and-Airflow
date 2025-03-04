@@ -36,10 +36,17 @@ def fetch_data_from_gcp_sql():
         cursor = conn.cursor()
 
         query = """
-        SELECT * 
-        FROM CreditCardTransactions
-        WHERE transaction_date >= DATE_SUB(CURRENT_DATE(), INTERVAL 1 MONTH)
-        AND transaction_date < CURRENT_DATE()
+        SELECT 
+    DATE_FORMAT(transaction_date, '%Y-%m') AS month,
+    card_number,
+    COUNT(id) AS total_transactions,
+    SUM(amount) AS total_spent,
+    AVG(amount) AS avg_transaction_amount
+FROM transactions
+WHERE transaction_date >= DATE_FORMAT(NOW() - INTERVAL 1 MONTH, '%Y-%m-01')
+  AND transaction_date < DATE_FORMAT(NOW(), '%Y-%m-01')  -- Ensures we include up to the last second of the previous month
+GROUP BY month, card_number
+ORDER BY total_spent DESC
         """
         cursor.execute(query)
         records = cursor.fetchall()
